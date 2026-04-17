@@ -1,0 +1,43 @@
+<div class="container">
+  <h1>Autenticación (desarrollo)</h1>
+
+  <section class="card">
+    <p>
+      Los endpoints de solicitudes requieren JWT. En desarrollo, obtiene un token con
+      <code>POST /api/v1/auth/dev-token</code>.
+    </p>
+    <p>
+      Estado:
+      @if (auth.hasToken()) {
+        <strong>token presente</strong>
+      } @else {
+        <strong>sin token</strong> (las operaciones protegidas fallarán con 401)
+      }
+    </p>
+    <form [formGroup]="devAuthForm" (ngSubmit)="requestDevToken()">
+      <p>
+        <label>UserId (GUID)</label><br />
+        <input formControlName="userId" type="text" style="width: 100%;" />
+      </p>
+      <p>
+        <label>Rol</label><br />
+        <select formControlName="role">
+          <option value="Requester">Requester</option>
+          <option value="AreaCoordinator">AreaCoordinator</option>
+          <option value="TicAnalyst">TicAnalyst</option>
+          <option value="InstitutionalApprover">InstitutionalApprover</option>
+          <option value="Implementer">Implementer</option>
+          <option value="Auditor">Auditor</option>
+          <option value="SystemAdministrator">SystemAdministrator</option>
+        </select>
+      </p>
+      <button type="submit" [disabled]="authBusy">
+        {{ authBusy ? "Obteniendo..." : "Obtener token dev" }}
+      </button>
+      <button type="button" (click)="logout()" [disabled]="authBusy">Cerrar sesión</button>
+    </form>
+    @if (authError) {
+      <p style="color: #b91c1c;">{{ authError }}</p>
+    }
+  </section>
+</div>

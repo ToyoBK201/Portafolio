@@ -1,0 +1,88 @@
+<div class="container">
+  <h1>Bandeja</h1>
+
+  <section class="card">
+    <p class="hint" style="margin-bottom: 1rem;">
+      La lista se actualiza sola al cambiar filtros (texto: ~0,3 s tras dejar de escribir; orden: al instante).
+    </p>
+    <form [formGroup]="listFiltersForm" (ngSubmit)="loadRequests()">
+      <p>
+        <label>Filtro estado</label><br />
+        <input formControlName="status" type="text" placeholder="Draft" />
+      </p>
+      <p>
+        <label>Filtro por solicitante (opcional; roles operativos y administrador)</label><br />
+        <input formControlName="requesterUserId" type="text" style="width: 100%;" placeholder="Vacío = todas" />
+      </p>
+      <p>
+        <label>Ordenar por</label><br />
+        <select formControlName="sortBy">
+          <option value="createdAtUtc">Creado</option>
+          <option value="title">Título</option>
+          <option value="status">Estado</option>
+        </select>
+      </p>
+      <p>
+        <label>Dirección</label><br />
+        <select formControlName="sortDirection">
+          <option value="desc">Desc</option>
+          <option value="asc">Asc</option>
+        </select>
+      </p>
+      <button type="submit" [disabled]="loadingList">
+        {{ loadingList ? "Cargando..." : "Recargar ahora" }}
+      </button>
+      <button type="button" style="margin-left: 0.5rem" (click)="downloadCsv()" [disabled]="exportBusy || loadingList">
+        {{ exportBusy ? "Exportando…" : "Exportar CSV" }}
+      </button>
+      <button type="button" style="margin-left: 0.35rem" (click)="downloadXlsx()" [disabled]="exportBusy || loadingList">
+        {{ exportBusy ? "Exportando…" : "Exportar Excel" }}
+      </button>
+    </form>
+
+    @if (exportError) {
+      <p class="err-text" style="margin-top: 0.75rem;">{{ exportError }}</p>
+    }
+    @if (listError) {
+      <p class="err-text">{{ listError }}</p>
+    } @else if (requests.length > 0) {
+      <p style="margin-top: 0.75rem;">
+        Total: {{ totalRequests }} | Página: {{ currentPage }} | Tamaño página: {{ pageSize }}
+      </p>
+      <table style="width: 100%; margin-top: 1rem; border-collapse: collapse;">
+        <thead>
+          <tr>
+            <th style="text-align: left; border-bottom: 1px solid #ddd;">RequestId</th>
+            <th style="text-align: left; border-bottom: 1px solid #ddd;">Título</th>
+            <th style="text-align: left; border-bottom: 1px solid #ddd;">Estado</th>
+            <th style="text-align: left; border-bottom: 1px solid #ddd;">Creado UTC</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of requests; track item.requestId) {
+            <tr>
+              <td style="padding: 0.25rem 0;">
+                <a [routerLink]="['/solicitudes', item.requestId]">{{ item.requestId }}</a>
+              </td>
+              <td>
+                <a [routerLink]="['/solicitudes', item.requestId]">{{ item.title }}</a>
+              </td>
+              <td>{{ item.status }}</td>
+              <td>{{ item.createdAtUtc }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <div style="margin-top: 0.75rem;">
+        <button type="button" (click)="previousPage()" [disabled]="loadingList || currentPage <= 1">Anterior</button>
+        <button type="button" (click)="nextPage()" [disabled]="loadingList || (currentPage * pageSize >= totalRequests)">Siguiente</button>
+      </div>
+    } @else if (!loadingList) {
+      <p class="hint" style="margin-top: 0.75rem;">
+        Lista vacía (0 solicitudes) con los filtros actuales. Cambia filtros o pulsa «Recargar ahora».
+        Necesitas <strong>Auth (dev)</strong> con token. Como <strong>Requester</strong> el filtro por defecto es tu
+        UserId; otros roles ven la cola completa si dejas el filtro de solicitante vacío.
+      </p>
+    }
+  </section>
+</div>

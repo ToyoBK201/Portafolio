@@ -1,0 +1,101 @@
+<div class="container">
+  <h1>Inicio</h1>
+  <p class="lede">
+    Integración MVP Angular + API. Usa el menú superior para autenticación de desarrollo, crear borradores,
+    bandeja y transiciones de estado.
+  </p>
+
+  <section class="card">
+    <h2>Estado de la API</h2>
+    @if (checking()) {
+      <p>Verificando estado de la API… (máx. 12 s)</p>
+    } @else if (health(); as h) {
+      <p><strong>Servicio:</strong> {{ h.service }}</p>
+      <p><strong>Estado:</strong> {{ h.status }}</p>
+      <p><strong>Timestamp UTC:</strong> {{ h.timestampUtc }}</p>
+      <p class="hint">
+        Para crear borradores o ver la bandeja necesitas un JWT: ve primero a <strong>Auth (dev)</strong>
+        y pulsa «Obtener token dev» con el mismo UserId que usarás en el formulario.
+      </p>
+    } @else {
+      <p class="err-text">{{ error() }}</p>
+    }
+  </section>
+
+  @if (auth.hasToken()) {
+    <section class="card" style="margin-top: 1rem;">
+      <h2>Cola de trabajo (resumen)</h2>
+      <p class="lede" style="margin-top: 0;">
+        Conteos por estado según tu rol: como <strong>Requester</strong> solo tus solicitudes; el resto de roles ven la cola global (alineado a <strong>docs/02</strong> § bandeja).
+      </p>
+      @if (workQueueLoading()) {
+        <p>Cargando resumen…</p>
+      } @else if (workQueueError()) {
+        <p class="err-text">{{ workQueueError() }}</p>
+        <button type="button" (click)="loadWorkQueueSummary()">Reintentar</button>
+      } @else if (workQueueEntries().length === 0) {
+        <p class="hint">Sin datos de conteo (o bandeja vacía).</p>
+      } @else {
+        <ul class="work-queue-summary">
+          @for (row of workQueueEntries(); track row.status) {
+            <li>
+              <strong>{{ row.status }}</strong>: {{ row.count }}
+              —
+              <a [routerLink]="['/solicitudes/bandeja']" [queryParams]="{ status: row.status }">Abrir en bandeja</a>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="card" style="margin-top: 1rem;">
+      <h2>Actividad reciente (in-app)</h2>
+      <p class="lede" style="margin-top: 0;">
+        Resumen según <strong>docs/01</strong> §2.2: eventos guardados al cambiar estado de una solicitud. Marca como leídas cuando las hayas visto.
+      </p>
+      @if (notifLoading()) {
+        <p>Cargando notificaciones…</p>
+      } @else if (notifError()) {
+        <p class="err-text">{{ notifError() }}</p>
+      } @else {
+        <p>
+          <strong>Sin leer:</strong>
+          {{ notifSummary()?.unreadCount ?? 0 }}
+          <button type="button" style="margin-left: 0.5rem" (click)="markAllRead()" [disabled]="markAllBusy()">
+            {{ markAllBusy() ? "Marcando…" : "Marcar todo como leído" }}
+          </button>
+          <button type="button" style="margin-left: 0.35rem" (click)="loadNotifications()">Actualizar</button>
+        </p>
+        @if (notifItems().length === 0) {
+          <p class="hint">No hay notificaciones todavía (aparecen al ejecutar transiciones sobre solicitudes).</p>
+        } @else {
+          <ul class="in-app-notifications">
+            @for (n of notifItems(); track n.notificationId) {
+              <li [class.unread]="!n.isRead">
+                <time [attr.datetime]="n.createdAtUtc">{{ n.createdAtUtc }}</time>
+                @if (n.requestId) {
+                  —
+                  <a
+                    [routerLink]="['/solicitudes', n.requestId!]"
+                    (click)="onNotificationClick(n)"
+                    >Abrir solicitud</a
+                  >
+                }
+                <br />
+                <strong>{{ n.title }}</strong>
+                <p class="notif-msg">{{ n.message }}</p>
+              </li>
+            }
+          </ul>
+        }
+      }
+    </section>
+  } @else {
+    <section class="card hint" style="margin-top: 1rem;">
+      <p>
+        <strong>Notificaciones in-app:</strong> inicia sesión en <a routerLink="/auth">Auth (dev)</a> para ver el
+        contador y la actividad reciente.
+      </p>
+    </section>
+  }
+</div>

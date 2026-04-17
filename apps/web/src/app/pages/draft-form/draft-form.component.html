@@ -1,0 +1,302 @@
+<div class="container">
+  @if (editRequestId) {
+    <p><a [routerLink]="['/solicitudes', editRequestId]">← Volver al detalle</a></p>
+  } @else {
+    <p><a routerLink="/">← Inicio</a></p>
+  }
+
+  <h1>{{ editRequestId ? "Editar borrador" : "Nueva solicitud (borrador)" }}</h1>
+
+  <section class="card">
+    <p class="hint">
+      El tipo de solicitud define los campos específicos. Si cambias el tipo, se
+      <strong>restablecen</strong> esos campos (los datos comunes se conservan).
+    </p>
+
+    <form [formGroup]="draftForm" (ngSubmit)="createDraft()">
+      <h2>Datos comunes</h2>
+      <p>
+        <label>Título</label><br />
+        <input formControlName="title" type="text" style="width: 100%;" />
+        @if (draftForm.get("title")?.touched && draftForm.get("title")?.invalid) {
+          <span class="err-text"> Obligatorio: entre 5 y 200 caracteres.</span>
+        }
+      </p>
+
+      <p>
+        <label>Descripción</label><br />
+        <textarea formControlName="description" rows="4" style="width: 100%;"></textarea>
+        @if (draftForm.get("description")?.touched && draftForm.get("description")?.invalid) {
+          <span class="err-text"> Obligatoria: entre 20 y 8000 caracteres.</span>
+        }
+      </p>
+
+      <p>
+        <label>Justificación de negocio</label><br />
+        <textarea formControlName="businessJustification" rows="3" style="width: 100%;"></textarea>
+        @if (
+          draftForm.get("businessJustification")?.touched && draftForm.get("businessJustification")?.invalid
+        ) {
+          <span class="err-text"> Obligatoria: mínimo 20 caracteres.</span>
+        }
+      </p>
+
+      <p>
+        <label>Tipo de solicitud</label><br />
+        <select formControlName="requestType" style="width: 100%; max-width: 32rem;">
+          @for (opt of requestTypeOptions; track opt.id) {
+            <option [ngValue]="opt.id">{{ opt.label }}</option>
+          }
+        </select>
+      </p>
+
+      <p>
+        <label>Prioridad</label><br />
+        <select formControlName="priority" style="max-width: 16rem;">
+          @for (opt of priorityOptions; track opt.id) {
+            <option [ngValue]="opt.id">{{ opt.label }}</option>
+          }
+        </select>
+      </p>
+
+      <p>
+        <label>Unidad solicitante</label><br />
+        @if (loadingUnits) {
+          <span>Cargando catálogo…</span>
+        } @else if (unitsCatalogError && organizationalUnits.length === 0) {
+          <span class="err-text">{{ unitsCatalogError }}</span>
+          <br />
+          <input formControlName="requestingUnitId" type="number" min="1" />
+        } @else if (organizationalUnits.length === 0) {
+          <span class="err-text">No hay unidades en catálogo.</span>
+          <input formControlName="requestingUnitId" type="number" min="1" />
+        } @else {
+          <select formControlName="requestingUnitId" style="width: 100%; max-width: 36rem;">
+            @for (u of organizationalUnits; track u.unitId) {
+              <option [ngValue]="u.unitId">
+                {{ u.code }} — {{ u.name }}{{ !u.isActive ? " (inactiva)" : "" }}
+              </option>
+            }
+          </select>
+        }
+      </p>
+
+      <p>
+        <label>Fecha deseada (opcional)</label><br />
+        <input formControlName="desiredDate" type="date" />
+      </p>
+
+      <h2>Datos específicos del tipo</h2>
+
+      <fieldset formGroupName="specific" style="border: 0; padding: 0; margin: 0;">
+        @switch (selectedRequestType()) {
+          @case (1) {
+            <p>
+              <label>Cantidad</label><br />
+              <input formControlName="quantity" type="number" min="1" />
+            </p>
+            <p>
+              <label>Especificación (marca/modelo/componentes, mín. 20 caracteres)</label><br />
+              <textarea formControlName="specification" rows="3" style="width: 100%;"></textarea>
+            </p>
+            <p>
+              <label>Justificación de reemplazo</label><br />
+              <textarea formControlName="replacementJustification" rows="2" style="width: 100%;"></textarea>
+            </p>
+            <p>
+              <label>Ubicación de instalación</label><br />
+              <input formControlName="installationLocation" type="text" style="width: 100%;" />
+            </p>
+            <p>
+              <label>Notas de compatibilidad (opcional)</label><br />
+              <textarea formControlName="compatibilityNotes" rows="2" style="width: 100%;"></textarea>
+            </p>
+          }
+          @case (2) {
+            <p>
+              <label>Producto</label><br />
+              <input formControlName="productName" type="text" style="width: 100%;" />
+            </p>
+            <p>
+              <label>Modelo de licencia</label><br />
+              <select formControlName="licenseModel">
+                <option value="Perpetual">Perpetual</option>
+                <option value="Subscription">Subscription</option>
+                <option value="Other">Other</option>
+              </select>
+            </p>
+            <p>
+              <label>Puestos o usuarios</label><br />
+              <input formControlName="seatOrUserCount" type="number" min="1" />
+            </p>
+            <p>
+              <label>Entorno</label><br />
+              <select formControlName="environment">
+                <option value="Production">Production</option>
+                <option value="Test">Test</option>
+                <option value="Development">Development</option>
+                <option value="Mixed">Mixed</option>
+              </select>
+            </p>
+            <p>
+              <label>
+                <input type="checkbox" formControlName="directoryOrSsoIntegration" />
+                Integración con directorio / SSO
+              </label>
+            </p>
+            <p>
+              <label>Detalle de integración (obligatorio si marcó SSO)</label><br />
+              <textarea formControlName="directoryOrSsoDetails" rows="2" style="width: 100%;"></textarea>
+            </p>
+          }
+          @case (3) {
+            <p>
+              <label>Alcance funcional (mín. 50 caracteres)</label><br />
+              <textarea formControlName="functionalScope" rows="4" style="width: 100%;"></textarea>
+            </p>
+            <p>
+              <label>Estimación de usuarios afectados</label><br />
+              <input formControlName="affectedUsersEstimate" type="number" min="0" />
+            </p>
+            <p>
+              <label>Sistemas afectados (una línea por ítem)</label><br />
+              <textarea formControlName="systemsAffectedText" rows="4" style="width: 100%;"></textarea>
+            </p>
+            <p>
+              <label>Criterios de aceptación (una línea por ítem)</label><br />
+              <textarea formControlName="acceptanceCriteriaText" rows="4" style="width: 100%;"></textarea>
+            </p>
+            <p>
+              <label>Dependencias (opcional)</label><br />
+              <textarea formControlName="dependencies" rows="2" style="width: 100%;"></textarea>
+            </p>
+          }
+          @case (4) {
+            <p>
+              <label>Descripción técnica (mín. 50 caracteres)</label><br />
+              <textarea formControlName="technicalDescription" rows="4" style="width: 100%;"></textarea>
+            </p>
+            <p>
+              <label>Ventana de mantenimiento</label><br />
+              <textarea formControlName="maintenanceWindow" rows="2" style="width: 100%;"></textarea>
+            </p>
+            <p>
+              <label>Riesgos (opcional)</label><br />
+              <textarea formControlName="riskNotes" rows="2" style="width: 100%;"></textarea>
+            </p>
+          }
+          @case (5) {
+            <p>
+              <label>Síntomas (mín. 20 caracteres)</label><br />
+              <textarea formControlName="symptoms" rows="3" style="width: 100%;"></textarea>
+            </p>
+            <p>
+              <label>Impacto</label><br />
+              <select formControlName="impactDescription">
+                <option value="Individual">Individual</option>
+                <option value="Department">Department</option>
+                <option value="Institutional">Institutional</option>
+              </select>
+            </p>
+            <p>
+              <label>Áreas afectadas (una por línea)</label><br />
+              <textarea formControlName="affectedAreasText" rows="3" style="width: 100%;"></textarea>
+            </p>
+          }
+          @case (6) {
+            <p>
+              <label>Activo o sistema</label><br />
+              <input formControlName="assetOrSystem" type="text" style="width: 100%;" />
+            </p>
+            <p>
+              <label>Tipo de control</label><br />
+              <select formControlName="controlType">
+                <option value="Hardening">Hardening</option>
+                <option value="Review">Review</option>
+                <option value="Access">Access</option>
+                <option value="Incident">Incident</option>
+                <option value="Other">Other</option>
+              </select>
+            </p>
+            <p>
+              <label>Hallazgo o contexto (mín. 30 caracteres)</label><br />
+              <textarea formControlName="findingOrContext" rows="4" style="width: 100%;"></textarea>
+            </p>
+          }
+          @case (7) {
+            <p>
+              <label>Sistemas origen (uno por línea)</label><br />
+              <textarea formControlName="sourceSystemsText" rows="3" style="width: 100%;"></textarea>
+            </p>
+            <p>
+              <label>Sistemas destino (uno por línea)</label><br />
+              <textarea formControlName="targetSystemsText" rows="3" style="width: 100%;"></textarea>
+            </p>
+            <p>
+              <label>Frecuencia</label><br />
+              <select formControlName="frequency">
+                <option value="Realtime">Realtime</option>
+                <option value="Daily">Daily</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Monthly">Monthly</option>
+                <option value="AdHoc">AdHoc</option>
+              </select>
+            </p>
+            <p>
+              <label>Expectativa de calidad de datos (mín. 20 caracteres)</label><br />
+              <textarea formControlName="dataQualityExpectation" rows="3" style="width: 100%;"></textarea>
+            </p>
+            <p>
+              <label>Responsable de datos</label><br />
+              <input formControlName="dataOwnerName" type="text" style="width: 100%;" />
+            </p>
+          }
+        }
+      </fieldset>
+
+      @if (draftForm.get("specific")?.touched && draftForm.get("specific")?.invalid) {
+        <p class="err-text">
+          Revisa los datos específicos del tipo (longitudes mínimas, listas por líneas, o detalle SSO si aplica).
+        </p>
+      }
+
+      <p style="margin-top: 1rem;">
+        <button type="submit" [disabled]="submitting">
+          {{ submitting ? "Guardando..." : editRequestId ? "Guardar cambios" : "Crear borrador" }}
+        </button>
+      </p>
+    </form>
+
+    @if (submitError) {
+      <p class="err-text">{{ submitError }}</p>
+    }
+
+    @if (updateSuccessMessage && loadedDraft && editRequestId) {
+      <p style="color: #065f46;">
+        <strong>{{ updateSuccessMessage }}</strong>
+        —
+        <a [routerLink]="['/solicitudes', loadedDraft.requestId]">Ver detalle</a>
+      </p>
+    }
+
+    @if (createdDraft) {
+      <p style="color: #065f46;">
+        <strong>Borrador creado:</strong>
+        <a [routerLink]="['/solicitudes', createdDraft.requestId]">{{ createdDraft.requestId }}</a>
+      </p>
+      <p>Estado: {{ createdDraft.status }}</p>
+      <p>Creado: {{ createdDraft.createdAtUtc }}</p>
+      <button type="button" (click)="loadDraftFromApi()">Consultar por ID en API</button>
+    }
+
+    @if (fetchError) {
+      <p class="err-text">{{ fetchError }}</p>
+    }
+
+    @if (loadedDraft && !editRequestId) {
+      <p><strong>Leído desde API:</strong> {{ loadedDraft.requestId }}</p>
+      <p>Título: {{ loadedDraft.title }}</p>
+      <p>Estado: {{ loadedDraft.status }}</p>
+    }
+  </section>
+</div>

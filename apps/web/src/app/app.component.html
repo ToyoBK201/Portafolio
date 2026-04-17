@@ -1,0 +1,88 @@
+<header class="app-header no-print">
+  <div class="container header-inner">
+    <a routerLink="/" class="brand">Solicitudes Tech Gov</a>
+    <nav class="nav" aria-label="Principal">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Inicio</a>
+      @if (!auth.hasToken()) {
+        <a routerLink="/login" routerLinkActive="active">Iniciar sesión</a>
+        <a routerLink="/auth" routerLinkActive="active">Token (dev)</a>
+      }
+      @if (auth.hasToken()) {
+        <a routerLink="/solicitudes/bandeja" routerLinkActive="active">Bandeja</a>
+      }
+      @if (showNavCreateRequest()) {
+        <a routerLink="/solicitudes/nueva" routerLinkActive="active">Nueva solicitud</a>
+      }
+      @if (showNavTransitions()) {
+        <a routerLink="/solicitudes/transiciones" routerLinkActive="active">Transiciones</a>
+      }
+      @if (showNavAdminOrgUnits()) {
+        <a routerLink="/admin/unidades-organizativas" routerLinkActive="active">Unidades org.</a>
+      }
+      @if (isSystemAdministrator()) {
+        <a routerLink="/admin/usuarios" routerLinkActive="active">Usuarios (admin)</a>
+      }
+      @if (showAuditNav()) {
+        <a routerLink="/admin/auditoria" routerLinkActive="active">Auditoría</a>
+      }
+      @if (auth.hasToken()) {
+        <button type="button" class="logout-btn" (click)="logout()">Cerrar sesión</button>
+      }
+    </nav>
+  </div>
+  @if (auth.hasToken()) {
+    @if (accountRolesLoading && auth.getAuthMethodFromToken() === "password") {
+      <div class="container dev-role-strip" role="status">Cargando roles de la cuenta…</div>
+    }
+    @if (accountRolesError && auth.getAuthMethodFromToken() === "password") {
+      <div class="container dev-role-strip" role="alert">
+        <span class="err-text">{{ accountRolesError }}</span>
+      </div>
+    }
+    @if (showAccountRoleStrip()) {
+      <div class="container dev-role-strip" role="region" aria-label="Rol activo">
+        <label for="account-active-role">Rol activo</label>
+        <select
+          id="account-active-role"
+          [value]="currentAccountRoleCode()"
+          [disabled]="accountRoleSwitchBusy"
+          (change)="onAccountActiveRoleChange($event)"
+        >
+          @for (r of accountRoles; track r.roleId) {
+            <option [value]="r.code">{{ r.labelEs }} ({{ r.code }})</option>
+          }
+        </select>
+        @if (accountRoleSwitchBusy) {
+          <span class="hint">Actualizando token…</span>
+        }
+        @if (accountRoleSwitchError) {
+          <span class="err-text">{{ accountRoleSwitchError }}</span>
+        }
+      </div>
+    }
+    @if (showDevRoleStrip()) {
+      <div class="container dev-role-strip" role="region" aria-label="Rol activo (desarrollo)">
+        <label for="dev-active-role">Rol activo (dev)</label>
+        <select
+          id="dev-active-role"
+          [value]="currentDevRole()"
+          [disabled]="roleSwitchBusy"
+          (change)="onDevActiveRoleChange($event)"
+        >
+          @for (r of devTokenRoles; track r) {
+            <option [value]="r">{{ r }}</option>
+          }
+        </select>
+        @if (roleSwitchBusy) {
+          <span class="hint">Actualizando token…</span>
+        }
+        @if (roleSwitchError) {
+          <span class="err-text">{{ roleSwitchError }}</span>
+        }
+      </div>
+    }
+  }
+</header>
+<main class="main-outlet">
+  <router-outlet />
+</main>

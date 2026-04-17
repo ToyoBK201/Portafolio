@@ -1,0 +1,227 @@
+<div class="container">
+  <div class="no-print print-toolbar">
+    <a routerLink="/solicitudes/bandeja">← Bandeja</a>
+    <button type="button" (click)="printView()">Imprimir / guardar como PDF</button>
+  </div>
+  <h1>Detalle de solicitud</h1>
+
+  @if (loadError) {
+    <p class="err-text">{{ loadError }}</p>
+    <p class="no-print">
+      <button type="button" (click)="retryLoadDetail()">Reintentar</button>
+    </p>
+  } @else if (request) {
+    <section class="card">
+      <p><strong>ID:</strong> {{ request.requestId }}</p>
+      <p><strong>Estado:</strong> {{ request.status }}</p>
+      <p><strong>Título:</strong> {{ request.title }}</p>
+      <p><strong>Descripción:</strong></p>
+      <p style="white-space: pre-wrap;">{{ request.description }}</p>
+      <p><strong>Justificación:</strong></p>
+      <p style="white-space: pre-wrap;">{{ request.businessJustification }}</p>
+      <p>
+        <strong>Tipo / Prioridad:</strong> {{ request.requestType }} / {{ request.priority }}
+      </p>
+      <p>
+        <strong>Unidad solicitante:</strong>
+        @if (requestingUnitLabel) {
+          {{ requestingUnitLabel }}
+          <span class="hint">(id {{ request.requestingUnitId }})</span>
+        } @else {
+          <span class="hint">(id {{ request.requestingUnitId }})</span>
+        }
+      </p>
+      <p><strong>Solicitante (UserId):</strong> {{ request.requesterUserId }}</p>
+      <p><strong>Fecha deseada:</strong> {{ request.desiredDate ?? "—" }}</p>
+      <p><strong>Creado (UTC):</strong> {{ request.createdAtUtc }}</p>
+
+      @if (request.specificPayloadJson) {
+        <details class="no-print" style="margin-top: 0.75rem;">
+          <summary>Payload específico (JSON)</summary>
+          <pre class="audit-payload">{{ request.specificPayloadJson }}</pre>
+        </details>
+      }
+      @if (request.specificPayloadJson) {
+        <div class="print-only-json">
+          <p><strong>Payload específico (JSON)</strong></p>
+          <pre class="audit-payload">{{ request.specificPayloadJson }}</pre>
+        </div>
+      }
+
+      @if (canEditDraft) {
+        <p class="no-print">
+          <a routerLink="/solicitudes/{{ request.requestId }}/editar">Editar borrador</a>
+        </p>
+      }
+
+      @if (canSubmitDraft) {
+        <p class="hint no-print">
+          La solicitud está en <strong>borrador</strong>. Al enviarla pasará a estado <em>Submitted</em> y dejará de ser
+          editable en este flujo MVP.
+        </p>
+        <button type="button" class="no-print" (click)="submitDraft()" [disabled]="submitBusy">
+          {{ submitBusy ? "Enviando..." : "Enviar solicitud" }}
+        </button>
+      }
+
+      @if (submitError) {
+        <p class="err-text">{{ submitError }}</p>
+        <p class="no-print">
+          <button type="button" (click)="retryLoadDetail()">Recargar detalle</button>
+        </p>
+      }
+      @if (submitSuccess) {
+        <p style="color: #065f46;">{{ submitSuccess }}</p>
+      }
+    </section>
+
+    <section class="card" style="margin-top: 1rem;">
+      <h2>Adjuntos</h2>
+      <p class="hint no-print">
+        Hasta 10 archivos por solicitud, 10 MB por archivo. Formatos: pdf, png, jpg, jpeg, docx, xlsx, csv, zip.
+      </p>
+      @if (attachmentsLoading) {
+        <p>Cargando adjuntos…</p>
+      } @else if (attachmentsError) {
+        <p class="err-text">{{ attachmentsError }}</p>
+      }
+      @if (uploadError) {
+        <p class="err-text">{{ uploadError }}</p>
+      }
+      <p class="no-print">
+        <input
+          #fileInput
+          type="file"
+          class="visually-hidden"
+          accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.csv,.zip"
+          (change)="onAttachmentFileSelected($event)"
+        />
+        <button type="button" (click)="fileInput.click()" [disabled]="uploadBusy">
+          {{ uploadBusy ? "Subiendo…" : "Subir archivo" }}
+        </button>
+      </p>
+      @if (attachments.length === 0 && !attachmentsLoading && !attachmentsError) {
+        <p class="hint">No hay adjuntos todavía.</p>
+      } @else if (attachments.length > 0) {
+        <ul class="attachment-list">
+          @for (a of attachments; track a.attachmentId) {
+            <li>
+              <button
+                type="button"
+                class="link-like no-print"
+                (click)="downloadAttachment(a.attachmentId, a.fileName)"
+              >
+                {{ a.fileName }}
+              </button>
+              <span class="print-only-filename">{{ a.fileName }}</span>
+              <span class="hint">
+                · {{ formatBytes(a.sizeBytes) }} · {{ a.uploadedAtUtc }}
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="card" style="margin-top: 1rem;">
+      <h2>Comentarios</h2>
+      <p class="hint no-print">
+        Los solicitantes ven solo comentarios públicos. Roles de análisis/aprobación pueden añadir notas internas.
+      </p>
+      @if (commentsLoading) {
+        <p>Cargando comentarios…</p>
+      } @else if (commentsError) {
+        <p class="err-text">{{ commentsError }}</p>
+      }
+      @if (canUseCommentComposer) {
+        <div class="comment-compose no-print">
+          <label for="comment-body">Nuevo comentario</label>
+          <textarea
+            id="comment-body"
+            rows="4"
+            class="comment-textarea"
+            [value]="newCommentBody"
+            (input)="onCommentBodyInput($event)"
+            placeholder="Escribe un comentario…"
+          ></textarea>
+          @if (canOfferInternalComment) {
+            <label class="comment-internal-label">
+              <input
+                type="checkbox"
+                [checked]="newCommentInternal"
+                (change)="onCommentInternalChange($event)"
+              />
+              Nota interna (no visible para el solicitante)
+            </label>
+          }
+          @if (postCommentError) {
+            <p class="err-text">{{ postCommentError }}</p>
+          }
+          <p>
+            <button type="button" (click)="submitComment()" [disabled]="postCommentBusy || !newCommentBody.trim()">
+              {{ postCommentBusy ? "Publicando…" : "Publicar" }}
+            </button>
+          </p>
+        </div>
+      } @else {
+        <p class="hint">Tu rol (p. ej. Auditor) solo puede leer comentarios en este MVP.</p>
+      }
+      @if (comments.length === 0 && !commentsLoading && !commentsError) {
+        <p class="hint">Aún no hay comentarios.</p>
+      } @else if (comments.length > 0) {
+        <ul class="comment-thread">
+          @for (c of comments; track c.commentId) {
+            <li>
+              <div class="comment-meta">
+                <strong>{{ c.authorDisplayName }}</strong>
+                @if (c.isInternal) {
+                  <span class="comment-badge">Interno</span>
+                }
+                <time [attr.datetime]="c.createdAtUtc">{{ c.createdAtUtc }}</time>
+              </div>
+              <p class="comment-body">{{ c.body }}</p>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="card" style="margin-top: 1rem;">
+      <h2>Línea de tiempo (auditoría)</h2>
+      @if (auditLoading) {
+        <p>Cargando historial…</p>
+      } @else if (auditError) {
+        <p class="err-text">{{ auditError }}</p>
+      } @else if (auditEntries.length === 0) {
+        <p class="hint">No hay eventos de auditoría registrados para esta solicitud.</p>
+      } @else {
+        <ol class="audit-timeline">
+          @for (e of auditEntries; track e.auditId) {
+            <li class="audit-timeline-item">
+              <div class="audit-timeline-head">
+                <div class="audit-timeline-dateline">
+                  <time class="audit-timeline-time" [attr.datetime]="e.occurredAtUtc">{{
+                    e.occurredAtUtc
+                  }}</time>
+                  <span class="audit-timeline-sep" aria-hidden="true">—</span>
+                </div>
+                <strong class="audit-timeline-title">{{ formatTransition(e) }}</strong>
+              </div>
+              <div class="audit-timeline-meta">
+                Rol: {{ e.actorRole }} · Usuario: {{ e.actorUserId }}
+                @if (e.correlationId) {
+                  · Correlación: {{ e.correlationId }}
+                }
+              </div>
+              @if (e.payloadSummary) {
+                <pre class="audit-payload">{{ e.payloadSummary }}</pre>
+              }
+            </li>
+          }
+        </ol>
+      }
+    </section>
+  } @else {
+    <p>Cargando…</p>
+  }
+</div>

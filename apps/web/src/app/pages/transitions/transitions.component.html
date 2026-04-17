@@ -1,0 +1,43 @@
+<div class="container">
+  <h1>Transiciones de estado</h1>
+
+  <section class="card">
+    <form [formGroup]="transitionForm" (ngSubmit)="applyTransition()">
+      <p>
+        <label>RequestId</label><br />
+        <input formControlName="requestId" type="text" style="width: 100%;" />
+      </p>
+      <p>
+        <label>Transition</label><br />
+        <select formControlName="transition">
+          <option value="Submit">Submit</option>
+          <option value="ReceiveForAnalysis">ReceiveForAnalysis</option>
+          <option value="SendToApproval">SendToApproval</option>
+          <option value="RejectFromAnalysis">RejectFromAnalysis</option>
+          <option value="Approve">Approve</option>
+          <option value="ReturnToAnalysis">ReturnToAnalysis</option>
+          <option value="RejectFromApproval">RejectFromApproval</option>
+          <option value="StartExecution">StartExecution</option>
+          <option value="RequestValidation">RequestValidation</option>
+          <option value="AcceptDelivery">AcceptDelivery</option>
+          <option value="ReturnToExecution">ReturnToExecution</option>
+          <option value="CancelByRequester">CancelByRequester</option>
+          <option value="CancelByAdmin">CancelByAdmin</option>
+        </select>
+      </p>
+      <p>
+        <label>Reason (cuando aplique)</label><br />
+        <textarea formControlName="reason" rows="2" style="width: 100%;"></textarea>
+      </p>
+      <button type="submit" [disabled]="transitionBusy">
+        {{ transitionBusy ? "Aplicando..." : "Aplicar transición" }}
+      </button>
+    </form>
+    @if (transitionError) {
+      <p class="err-text">{{ transitionError }}</p>
+    }
+    @if (transitionSuccess) {
+      <p style="color: #065f46;">{{ transitionSuccess }}</p>
+    }
+  </section>
+</div>

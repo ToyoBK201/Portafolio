@@ -1,0 +1,79 @@
+<div class="container">
+  <p><a routerLink="/admin/usuarios">← Volver a usuarios</a></p>
+  <h1>Roles del usuario</h1>
+
+  @if (!isSystemAdministrator) {
+    <section class="card">
+      <p class="err-text">Se requiere rol SystemAdministrator.</p>
+    </section>
+  } @else if (!userId) {
+    <p class="err-text">Identificador de usuario no válido.</p>
+  } @else if (loadError) {
+    <p class="err-text">{{ loadError }}</p>
+  } @else if (busy) {
+    <p>Cargando…</p>
+  } @else if (detail) {
+    <section class="card">
+      <h2 style="margin-top: 0;">{{ detail.displayName }}</h2>
+      <p style="margin: 0.25rem 0;"><strong>Email:</strong> {{ detail.email }}</p>
+      <p style="margin: 0.25rem 0;"><strong>UserId:</strong> {{ detail.userId }}</p>
+      <p style="margin: 0.25rem 0;"><strong>Activo:</strong> {{ detail.isActive ? "Sí" : "No" }}</p>
+    </section>
+
+    <section class="card" style="margin-top: 1rem;">
+      <h2 style="margin-top: 0;">Asignaciones de rol</h2>
+      <p class="lede" style="margin-top: 0;">
+        Cada fila es un rol (opcionalmente acotado a una unidad organizativa activa). Guardar reemplaza todas las
+        asignaciones.
+      </p>
+
+      @if (saveError) {
+        <p class="err-text">{{ saveError }}</p>
+      }
+
+      <table style="width: 100%; border-collapse: collapse; margin-top: 0.75rem;">
+        <thead>
+          <tr>
+            <th style="text-align: left; border-bottom: 1px solid #ddd;">Rol</th>
+            <th style="text-align: left; border-bottom: 1px solid #ddd;">Unidad (opcional)</th>
+            <th style="text-align: left; border-bottom: 1px solid #ddd;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of assignments.controls; track $index; let i = $index) {
+            <tr [formGroup]="assignmentAt(i)">
+              <td style="padding: 0.35rem 0;">
+                <select formControlName="roleId" style="min-width: 14rem">
+                  @for (opt of roleOptions; track opt.roleId) {
+                    <option [value]="opt.roleId">{{ opt.labelEs }} ({{ opt.code }})</option>
+                  }
+                </select>
+              </td>
+              <td>
+                <select formControlName="organizationalUnitId" style="min-width: 12rem">
+                  <option [ngValue]="null">— Sin unidad —</option>
+                  @for (u of units; track u.unitId) {
+                    <option [ngValue]="u.unitId">{{ u.code }} — {{ u.name }}</option>
+                  }
+                </select>
+              </td>
+              <td>
+                <button type="button" class="link-like" (click)="removeAssignmentRow(i)">Quitar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <p style="margin-top: 0.75rem;">
+        <button type="button" (click)="addAssignmentRow()">Añadir fila</button>
+        <button type="button" style="margin-left: 0.5rem" (click)="saveRoles()" [disabled]="saving">
+          {{ saving ? "Guardando…" : "Guardar roles" }}
+        </button>
+        <button type="button" style="margin-left: 0.35rem" (click)="loadAll()" [disabled]="busy || saving">
+          Descartar cambios
+        </button>
+      </p>
+    </section>
+  }
+</div>

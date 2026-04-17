@@ -1,0 +1,2 @@
+/** GUID de prueba MVP (debe existir en AppUser de la BD de desarrollo). */
+export const DEFAULT_REQUESTER_USER_ID = "11111111-1111-1111-1111-111111111111";

@@ -1,0 +1,96 @@
+<div class="container">
+  <h1>Unidades organizativas</h1>
+  <p class="lede">
+    Catálogo D1: lectura para cualquier usuario autenticado. Crear y editar requiere rol
+    <strong>SystemAdministrator</strong> (Auth dev).
+  </p>
+
+  <p>
+    <button type="button" (click)="toggleActiveOnly()" [disabled]="busy">
+      {{ activeOnly ? "Mostrar todas (incl. inactivas)" : "Solo unidades activas" }}
+    </button>
+    <button type="button" style="margin-left: 0.5rem" (click)="reload()" [disabled]="busy">
+      {{ busy ? "Cargando…" : "Recargar" }}
+    </button>
+  </p>
+
+  @if (listError) {
+    <p class="err-text">{{ listError }}</p>
+  }
+
+  @if (isSystemAdministrator) {
+    <section class="card" style="margin-top: 1rem;">
+      <h2 style="margin-top: 0;">Nueva unidad</h2>
+      <form [formGroup]="createForm" (ngSubmit)="createUnit()">
+        <p>
+          <label>Código (1–32)</label><br />
+          <input formControlName="code" type="text" maxlength="32" style="width: 100%; max-width: 24rem" />
+        </p>
+        <p>
+          <label>Nombre (1–200)</label><br />
+          <input formControlName="name" type="text" maxlength="200" style="width: 100%; max-width: 36rem" />
+        </p>
+        <button type="submit" [disabled]="busy">Crear</button>
+      </form>
+    </section>
+  }
+
+  <section class="card" style="margin-top: 1rem;">
+    <h2 style="margin-top: 0;">Listado</h2>
+    <p>
+      <label for="org-unit-filter">Filtrar en catálogo cargado</label><br />
+      <input
+        id="org-unit-filter"
+        type="search"
+        [formControl]="listFilter"
+        placeholder="Id, código o nombre — al instante"
+        style="width: 100%; max-width: 36rem"
+      />
+    </p>
+    @if (rows.length === 0 && !busy) {
+      <p>Sin unidades en el catálogo (o aún cargando).</p>
+    } @else if (filteredRowIndices.length === 0 && !busy) {
+      <p>Ninguna fila coincide con el filtro.</p>
+    } @else {
+      <table style="width: 100%; border-collapse: collapse; margin-top: 0.5rem;">
+        <thead>
+          <tr>
+            <th style="text-align: left; border-bottom: 1px solid #ddd;">Id</th>
+            <th style="text-align: left; border-bottom: 1px solid #ddd;">Código</th>
+            <th style="text-align: left; border-bottom: 1px solid #ddd;">Nombre</th>
+            <th style="text-align: left; border-bottom: 1px solid #ddd;">Activa</th>
+            <th style="text-align: left; border-bottom: 1px solid #ddd;">Creada UTC</th>
+            @if (isSystemAdministrator) {
+              <th style="text-align: left; border-bottom: 1px solid #ddd;"></th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (i of filteredRowIndices; track rowGroupAt(i).value.unitId) {
+            <tr [formGroup]="rowGroupAt(i)">
+              @let g = rowGroupAt(i);
+              <td style="padding: 0.35rem 0;">{{ g.value.unitId }}</td>
+              @if (isSystemAdministrator) {
+                <td><input formControlName="code" type="text" style="width: 100%; min-width: 6rem" /></td>
+                <td><input formControlName="name" type="text" style="width: 100%; min-width: 10rem" /></td>
+                <td><input formControlName="isActive" type="checkbox" /></td>
+              } @else {
+                <td>{{ g.value.code }}</td>
+                <td>{{ g.value.name }}</td>
+                <td>{{ g.value.isActive ? "Sí" : "No" }}</td>
+              }
+              <td style="font-size: 0.9rem; color: #4b5563;">{{ g.value.createdAtUtc }}</td>
+              @if (isSystemAdministrator) {
+                <td>
+                  <button type="button" (click)="saveRow(i)" [disabled]="busy || rowBusy[g.value.unitId]">
+                    {{ rowBusy[g.value.unitId] ? "…" : "Guardar" }}
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+</div>

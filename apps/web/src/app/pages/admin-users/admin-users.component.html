@@ -1,0 +1,87 @@
+<div class="container">
+  <h1>Usuarios (administración)</h1>
+  <p class="lede">D2: listado, alta y asignación de roles. Solo rol <strong>SystemAdministrator</strong>.</p>
+
+  @if (!isSystemAdministrator) {
+    <section class="card">
+      <p class="err-text">
+        Tu sesión no es de administrador del sistema. Ve a «Auth (dev)», elige SystemAdministrator y vuelve aquí.
+      </p>
+    </section>
+  } @else {
+    @if (listError) {
+      <p class="err-text">{{ listError }}</p>
+    }
+
+    <section class="card" style="margin-top: 1rem;">
+      <h2 style="margin-top: 0;">Nuevo usuario</h2>
+      <form [formGroup]="createForm" (ngSubmit)="createUser()">
+        <p>
+          <label>Email</label><br />
+          <input formControlName="email" type="email" style="width: 100%; max-width: 28rem" />
+        </p>
+        <p>
+          <label>Nombre para mostrar</label><br />
+          <input formControlName="displayName" type="text" style="width: 100%; max-width: 28rem" />
+        </p>
+        <button type="submit" [disabled]="busy">Crear</button>
+      </form>
+    </section>
+
+    <section class="card" style="margin-top: 1rem;">
+      <h2 style="margin-top: 0;">Listado</h2>
+      <p>
+        <label for="user-list-filter">Filtrar en esta página</label><br />
+        <input
+          id="user-list-filter"
+          type="search"
+          [formControl]="listFilter"
+          placeholder="Email, nombre o id — se filtra al instante"
+          style="width: 100%; max-width: 28rem"
+        />
+      </p>
+      <p>
+        <button type="button" (click)="loadPage(1)" [disabled]="busy">{{ busy ? "Cargando…" : "Recargar" }}</button>
+      </p>
+      @if (users.length === 0 && !busy) {
+        <p>Sin usuarios en esta página.</p>
+      } @else if (filteredUsers.length === 0 && !busy) {
+        <p>Ningún usuario coincide con el filtro en esta página.</p>
+      } @else {
+        <p style="font-size: 0.95rem; color: #4b5563;">
+          Total: {{ totalCount }} | Página {{ currentPage }} de {{ totalPages() }}
+        </p>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 0.5rem;">
+          <thead>
+            <tr>
+              <th style="text-align: left; border-bottom: 1px solid #ddd;">Email</th>
+              <th style="text-align: left; border-bottom: 1px solid #ddd;">Nombre</th>
+              <th style="text-align: left; border-bottom: 1px solid #ddd;">Activo</th>
+              <th style="text-align: left; border-bottom: 1px solid #ddd;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (u of filteredUsers; track u.userId) {
+              <tr>
+                <td style="padding: 0.35rem 0;">{{ u.email }}</td>
+                <td>{{ u.displayName }}</td>
+                <td>{{ u.isActive ? "Sí" : "No" }}</td>
+                <td><a [routerLink]="['/admin/usuarios', u.userId]">Roles</a></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <p style="margin-top: 0.75rem;">
+          @if (currentPage > 1) {
+            <button type="button" (click)="loadPage(currentPage - 1)" [disabled]="busy">Anterior</button>
+          }
+          @if (currentPage < totalPages()) {
+            <button type="button" style="margin-left: 0.35rem" (click)="loadPage(currentPage + 1)" [disabled]="busy">
+              Siguiente
+            </button>
+          }
+        </p>
+      }
+    </section>
+  }
+</div>

@@ -1,0 +1,14 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: solicitudes-tech-gov-sql
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "StrongP@ssw0rd123"
+    ports:
+      - "14333:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+
+volumes:
+  sqlserver-data:

@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Restore backend
+        run: dotnet restore SolicitudesTechGov.sln
+      - name: Build backend
+        run: dotnet build SolicitudesTechGov.sln --no-restore
+      - name: Test backend
+        run: dotnet test SolicitudesTechGov.sln --no-build --verbosity minimal
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Setup Chrome (Karma / ChromeHeadless)
+        uses: browser-actions/setup-chrome@v1
+      - name: Set CHROME_BIN for Karma
+        run: echo "CHROME_BIN=$(command -v chrome)" >> "$GITHUB_ENV"
+      - name: Install, test and build Angular SPA
+        working-directory: apps/web
+        run: |
+          npm ci
+          npm run test
+          npm run build

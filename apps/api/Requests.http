@@ -1,0 +1,20 @@
+@baseUrl = http://localhost:5000
+
+GET {{baseUrl}}/api/v1/health
+
+###
+
+POST {{baseUrl}}/api/v1/requests
+Content-Type: application/json
+
+{
+  "title": "Solicitud de licenciamiento",
+  "description": "Se requiere adquirir nuevas licencias de software para personal operativo.",
+  "businessJustification": "Cumplir continuidad operativa y lineamientos institucionales.",
+  "requestType": 2,
+  "priority": 2,
+  "requestingUnitId": 1,
+  "requesterUserId": "11111111-1111-1111-1111-111111111111",
+  "desiredDate": "2026-05-01",
+  "specificPayloadJson": "{\"productName\":\"Office\"}"
+}

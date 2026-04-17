@@ -1,0 +1,312 @@
+openapi: 3.0.3
+info:
+  title: SolicitudesTechGov API
+  version: 1.0.0
+  description: |
+    Cabecera opcional `X-Correlation-Id` (UUID) en cada petición: si no se envía, la API genera un valor
+    y lo devuelve en la respuesta para correlacionar cliente, logs y auditoría.
+paths:
+  /api/v1/auth/dev-token:
+    post:
+      summary: Issue development JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DevTokenRequest"
+      responses:
+        "200":
+          description: Token generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "400":
+          description: Invalid role
+  /api/v1/health:
+    get:
+      summary: API health check
+      responses:
+        "200":
+          description: Service status
+  /api/v1/requests:
+    post:
+      summary: Create request draft
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDraftRequest"
+      responses:
+        "201":
+          description: Draft created
+        "401":
+          description: Missing or invalid token
+        "403":
+          description: Forbidden by requester scope
+    get:
+      summary: List requests with pagination and filters
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/RequestStatus"
+        - in: query
+          name: requesterUserId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: createdFromUtc
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: createdToUtc
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum: [createdAtUtc, title, status]
+            default: createdAtUtc
+        - in: query
+          name: sortDirection
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        "200":
+          description: Paged request list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagedRequestResult"
+        "401":
+          description: Missing or invalid token
+        "403":
+          description: Forbidden requester filter
+  /api/v1/requests/{id}:
+    get:
+      summary: Get request by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Request found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestDto"
+        "401":
+          description: Missing or invalid token
+        "403":
+          description: Forbidden for this requester
+        "404":
+          description: Request not found
+  /api/v1/requests/{id}/transitions:
+    post:
+      summary: Apply explicit status transition
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransitionRequest"
+      responses:
+        "204":
+          description: Transition applied
+        "400":
+          description: Validation failure (invalid transition or reason)
+        "401":
+          description: Missing or invalid token
+        "403":
+          description: Role not authorized
+        "404":
+          description: Request not found
+        "409":
+          description: State changed concurrently
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    DevTokenRequest:
+      type: object
+      required: [userId, role]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum:
+            - Requester
+            - AreaCoordinator
+            - TicAnalyst
+            - InstitutionalApprover
+            - Implementer
+            - SystemAdministrator
+            - Auditor
+    TokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+          example: Bearer
+        expiresIn:
+          type: integer
+    CreateDraftRequest:
+      type: object
+      required:
+        - title
+        - description
+        - businessJustification
+        - requestType
+        - priority
+        - requestingUnitId
+        - requesterUserId
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        businessJustification:
+          type: string
+        requestType:
+          type: integer
+        priority:
+          type: integer
+        requestingUnitId:
+          type: integer
+        requesterUserId:
+          type: string
+          format: uuid
+        desiredDate:
+          type: string
+          format: date
+        specificPayloadJson:
+          type: string
+    TransitionRequest:
+      type: object
+      required: [transition]
+      properties:
+        transition:
+          $ref: "#/components/schemas/Transition"
+        reason:
+          type: string
+          nullable: true
+    Transition:
+      type: string
+      enum:
+        - Submit
+        - ReceiveForAnalysis
+        - SendToApproval
+        - RejectFromAnalysis
+        - Approve
+        - ReturnToAnalysis
+        - RejectFromApproval
+        - StartExecution
+        - RequestValidation
+        - AcceptDelivery
+        - ReturnToExecution
+        - CancelByRequester
+        - CancelByAdmin
+    RequestStatus:
+      type: string
+      enum:
+        - Draft
+        - Submitted
+        - InTicAnalysis
+        - PendingApproval
+        - Approved
+        - Rejected
+        - InProgress
+        - PendingRequesterValidation
+        - Closed
+        - Cancelled
+    RequestDto:
+      type: object
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        businessJustification:
+          type: string
+        requestType:
+          type: integer
+        priority:
+          type: integer
+        requestingUnitId:
+          type: integer
+        requesterUserId:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/RequestStatus"
+        desiredDate:
+          type: string
+          format: date
+          nullable: true
+        createdAtUtc:
+          type: string
+          format: date-time
+    PagedRequestResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RequestDto"
+        totalCount:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer

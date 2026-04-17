@@ -1,0 +1,27 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Node / Angular
+node_modules/
+dist/
+coverage/
+.angular/
+
+# .NET
+bin/
+obj/
+.vs/
+TestResults/
+
+# Logs / env
+*.log
+.env
+.env.*
+
+# SQL local artifacts
+*.bacpac
+*.mdf
+*.ldf

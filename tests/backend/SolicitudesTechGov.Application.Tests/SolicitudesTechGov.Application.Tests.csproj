@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\backend\application\SolicitudesTechGov.Application.csproj" />
+    <ProjectReference Include="..\..\..\src\backend\infrastructure\SolicitudesTechGov.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

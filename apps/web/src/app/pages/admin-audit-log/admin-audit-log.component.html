@@ -1,0 +1,131 @@
+<div class="container">
+  <p><a routerLink="/">← Inicio</a></p>
+  <h1>Auditoría (global)</h1>
+  <p class="lede">
+    Listado de eventos en <code>AuditLog</code> (transiciones de solicitudes, administración de catálogos y roles).
+    Acceso: <strong>SystemAdministrator</strong> o <strong>Auditor</strong>.
+  </p>
+
+  @if (!canAccess) {
+    <section class="card">
+      <p class="err-text">
+        Tu rol actual no puede ver esta vista. Use «Token (dev)» o cambie a Administrador del sistema o Auditor.
+      </p>
+    </section>
+  } @else {
+    @if (listError) {
+      <p class="err-text">{{ listError }}</p>
+    }
+
+    <section class="card" style="margin-top: 1rem;">
+      <h2 style="margin-top: 0;">Filtros</h2>
+      <p class="hint" style="margin-bottom: 0.75rem;">
+        La tabla se actualiza al escribir (≈0,3 s tras pausa). Usa valores exactos para coincidir en la API.
+      </p>
+      <form [formGroup]="filterForm" (ngSubmit)="loadPage(1)">
+        <p>
+          <label for="audit-entity">EntityType (exacto)</label><br />
+          <input
+            id="audit-entity"
+            formControlName="entityType"
+            type="text"
+            placeholder="p. ej. Request, OrganizationalUnit, AppUser"
+            style="width: 100%; max-width: 28rem"
+          />
+        </p>
+        <p>
+          <label for="audit-action">Action (exacto)</label><br />
+          <input
+            id="audit-action"
+            formControlName="action"
+            type="text"
+            placeholder="p. ej. Submit, OrganizationalUnitCreated"
+            style="width: 100%; max-width: 28rem"
+          />
+        </p>
+        <button type="submit" [disabled]="busy">{{ busy ? "Cargando…" : "Recargar ahora" }}</button>
+        <button type="button" style="margin-left: 0.5rem" [disabled]="busy || exportBusy" (click)="downloadCsv()">
+          {{ exportBusy ? "Exportando…" : "Descargar CSV (hasta 5000 filas)" }}
+        </button>
+      </form>
+      @if (exportError) {
+        <p class="err-text">{{ exportError }}</p>
+      }
+    </section>
+
+    <section class="card" style="margin-top: 1rem;">
+      <h2 style="margin-top: 0;">Eventos</h2>
+      <p>
+        <button type="button" (click)="loadPage(currentPage)" [disabled]="busy">
+          {{ busy ? "Cargando…" : "Recargar" }}
+        </button>
+      </p>
+      @if (entries.length === 0 && !busy) {
+        <p>Sin filas en esta página.</p>
+      } @else {
+        <p style="font-size: 0.95rem; color: #4b5563;">
+          Total: {{ totalCount }} | Página {{ currentPage }} de {{ totalPages() }}
+        </p>
+        <div class="audit-table-wrap">
+          <table class="audit-data-table">
+            <thead>
+              <tr>
+                <th class="col-utc">UTC</th>
+                <th class="col-action">Acción</th>
+                <th class="col-entity">Entidad</th>
+                <th class="col-actor">Actor</th>
+                <th class="col-status">Estados</th>
+                <th class="col-summary">Resumen</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (e of entries; track e.auditId) {
+                <tr>
+                  <td class="col-utc">{{ shortUtc(e.occurredAtUtc) }}</td>
+                  <td class="col-action">
+                    <span class="audit-cell-line">{{ e.action }}</span>
+                  </td>
+                  <td class="col-entity">
+                    <span class="audit-cell-line">{{ e.entityType }}</span>
+                    <span class="audit-cell-meta">id {{ e.entityId }}</span>
+                    @if (e.requestId) {
+                      <a class="audit-cell-link" [routerLink]="['/solicitudes', e.requestId]">Ver solicitud</a>
+                    }
+                  </td>
+                  <td class="col-actor">
+                    <span class="audit-cell-line">{{ e.actorRole }}</span>
+                    <span class="audit-cell-meta">{{ shortUserId(e.actorUserId) }}</span>
+                  </td>
+                  <td class="col-status">
+                    @if (e.fromStatus || e.toStatus) {
+                      <span class="audit-cell-line">{{ e.fromStatus ?? "—" }} → {{ e.toStatus ?? "—" }}</span>
+                    } @else {
+                      —
+                    }
+                  </td>
+                  <td class="col-summary">
+                    @if (e.payloadSummary) {
+                      <pre class="audit-payload-cell">{{ e.payloadSummary }}</pre>
+                    } @else {
+                      —
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top: 0.75rem;">
+          @if (currentPage > 1) {
+            <button type="button" (click)="loadPage(currentPage - 1)" [disabled]="busy">Anterior</button>
+          }
+          @if (currentPage < totalPages()) {
+            <button type="button" style="margin-left: 0.35rem" (click)="loadPage(currentPage + 1)" [disabled]="busy">
+              Siguiente
+            </button>
+          }
+        </p>
+      }
+    </section>
+  }
+</div>
